@@ -1,0 +1,100 @@
+﻿@page "/"
+@using BLazorPDFVewer.Data
+@using BlazorInputFile
+@inject BLazorPDFVewer.IService.IFileService fileService;
+@inject BLazorPDFVewer.IService.IFileUpload fileUpload;
+
+@inject IJSRuntime jsRuntime
+
+
+<BlazorInputFile.InputFile OnChange="HandleFileSelected" />
+
+@*https://www.youtube.com/watch?v=GDRXtXw6QIE*@
+
+<table class="table table-bordered" style="margin-top:10px;">
+    <thead>
+        <tr>
+            <th>SL</th>
+            <th>PDF Name</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if(fileClass.Files!=null && fileClass.Files.Count > 0)
+        {
+            @foreach(FileClass file in fileClass.Files)
+            {
+                <tr>
+                    <td>@file.FileId</td>
+                    <td>@file.Name</td>
+                    <td>
+                        <button @onclick="@(() => ShowOnCurrentPage(file.FileId))" >Current Page</button>
+                        <button @onclick="@(() => ShowOnNewTab(file.FileId))">New Tab</button>
+                        
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+
+@if (!string.IsNullOrEmpty(pdfName))
+{
+    <iframe src="/files/@pdfName" style="width:100%; height:1200px;"></iframe>
+}
+
+
+
+
+@code{
+    public FileClass fileClass = new FileClass();
+    List<IFileListEntry> files = new List<IFileListEntry>();
+    public string pdfName = "";
+
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+       
+        this.StateHasChanged();
+    }
+    async Task OnFileChanged(InputFileChangeEventArgs e)
+    {
+
+    }
+
+    async Task HandleFileSelected(IFileListEntry[] entryFiles)
+    {
+        files = new List<IFileListEntry>();
+        foreach (var file in entryFiles)
+        {
+            if(file != null)
+            {
+                await fileUpload.Upload(file);
+                files.Add(file);
+            }
+        }
+        fileClass.Files = fileService.GetAllPDFs();
+    }
+
+
+    private void ShowOnCurrentPage(int fileId)
+    {
+        pdfName = fileClass.Files.SingleOrDefault(x => x.FileId == fileId).Name;
+    }
+
+    private void ShowOnNewTab(int fileId)
+    {
+        pdfName = fileClass.Files.SingleOrDefault(x => x.FileId == fileId).Name;
+        jsRuntime.InvokeVoidAsync("OpenNewTab", pdfName);
+    }
+}
+
+
+
+
+
+
+
+
+
